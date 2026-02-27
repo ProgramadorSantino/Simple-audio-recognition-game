@@ -1,0 +1,232 @@
+import sounddevice as sd
+import numpy as np
+import scipy.io.wavfile as wav
+import speech_recognition as sr
+import random
+import time
+
+# =========================
+# CONFIGURACIÓN
+# =========================
+sample_rate = 44100
+
+# Diccionario base Español -> Inglés
+palabras_facil = {
+    "gato": "cat",
+    "perro": "dog",
+    "casa": "house",
+    "agua": "water",
+    "sol": "sun",
+    "coche": "car",
+    "pan": "bread"
+    
+}
+
+palabras_medio = {
+    "ventana": "window",
+    "escuela": "school",
+    "comida": "food",
+    "correr": "run",
+    "libro": "book",
+    "ciudad": "city",
+    "trabajo": "work",
+    "montaña": "mountain",
+    "dinero" : "money"
+}
+
+palabras_dificil = {
+    "desarrollo": "development",
+    "conocimiento": "knowledge",
+    "herramienta": "tool",
+    "computadora": "computer",
+    "oportunidad": "opportunity",
+    "emprendedor": "entrepreneur",
+    "investigacion": "research",
+    "conciensa": "awareness",
+    "liderazgo": "leadership"
+}
+
+# =========================
+# SELECCIÓN DE IDIOMA MATERNO
+# =========================
+print("======================================")
+print("🌍 Selecciona tu idioma materno")
+print("1️⃣ Español")
+print("2️⃣ Inglés")
+
+idioma_opcion = input("Elige opción (1/2): ")
+
+if idioma_opcion == "1":
+    idioma_reconocimiento = "es-ES"
+    print("\n📢 Las palabras aparecerán en INGLÉS")
+    modo = "ES"
+elif idioma_opcion == "2":
+    idioma_reconocimiento = "en-US"
+    print("\n📢 Las palabras aparecerán en ESPAÑOL")
+    modo = "EN"
+else:
+    print("❌ Opción inválida, se usará Español por defecto.")
+    idioma_reconocimiento = "es-ES"
+    modo = "ES"
+
+# =========================
+# SELECCIÓN DE DIFICULTAD
+# =========================
+print("\nSelecciona dificultad:")
+print("1️⃣ Fácil")
+print("2️⃣ Medio")
+print("3️⃣ Difícil")
+
+nivel = input("Elige opción (1/2/3): ")
+
+if nivel == "1":
+    palabras_base = palabras_facil
+    duration = 4
+elif nivel == "2":
+    palabras_base = palabras_medio
+    duration = 5
+elif nivel == "3":
+    palabras_base = palabras_dificil
+    duration = 6
+# =========================
+# DIFICULTAD DE TIEMPO (APARTE)
+# =========================
+print("\n⏳ Selecciona dificultad de TIEMPO:")
+print("1️⃣ Fácil (tiempo normal)")
+print("2️⃣ Media (-1 segundo)")
+print("3️⃣ Difícil (-2 segundos)")
+
+nivel_tiempo = input("Elige opción (1/2/3): ")
+
+if nivel_tiempo == "1":
+    print("⏳ Tiempo normal.")
+elif nivel_tiempo == "2":
+    duration -= 1
+    print("⚡ Tiempo reducido en 1 segundo.")
+elif nivel_tiempo == "3":
+    duration -= 2
+    print("🔥 Tiempo reducido en 2 segundos.")
+else:
+    print("❌ Opción inválida. Se mantiene tiempo normal.")
+
+# Evitar que el tiempo sea menor a 1 segundo
+if duration < 1:
+    duration = 1
+
+print(f"⏱ Tendrás {duration} segundos para responder.")
+
+
+# =========================
+# INVERTIR DICCIONARIO SI ES NECESARIO
+# =========================
+if modo == "ES":
+    # Mostrar inglés → responder español
+    palabras = {v: k for k, v in palabras_base.items()}
+else:
+    # Mostrar español → responder inglés
+    palabras = palabras_base
+
+# =========================
+# VARIABLES DEL JUEGO
+# =========================
+vidas = 3
+puntos = 0
+combo = 0
+recognizer = sr.Recognizer()
+
+print("\n❤️ Tienes 3 vidas")
+print("🏆 ¡Comienza el juego!")
+
+
+print("\n🎬 El juego comienza en...")
+for i in range(3, 0, -1):
+    print(i)
+    time.sleep(1)
+print("🚀 ¡Comienza!\n")
+
+
+# =========================
+# BUCLE PRINCIPAL
+# =========================
+while vidas > 0:
+
+    comando = input("Presiona ENTER para continuar o escribe 'pausa': ").lower().strip()
+
+    if comando == "pausa":
+        print("⏸ Juego en pausa. Escribe 'continuar' para seguir.")
+
+        while True:
+            reanudar = input(">> ").lower().strip()
+            if reanudar in ["continuar", "continuo"]:
+                print("▶ Reanudando juego...\n")
+                break
+        continue  # vuelve al inicio del while
+
+    # =========================
+    # RONDA NORMAL DEL JUEGO
+    # =========================
+    palabra_mostrar = random.choice(list(palabras.keys()))
+    palabra_correcta = palabras[palabra_mostrar]
+
+    print("\n======================================")
+    print(f"📚 Traduce esta palabra: 👉 {palabra_mostrar.upper()}")
+    print("🎤 Habla ahora...")
+
+    recording = sd.rec(
+        int(duration * sample_rate),
+        samplerate=sample_rate,
+        channels=1,
+        dtype="int16"
+    )
+
+    sd.wait()
+    wav.write("respuesta.wav", sample_rate, recording)
+
+    try:
+        with sr.AudioFile("respuesta.wav") as source:
+            audio = recognizer.record(source)
+
+        texto = recognizer.recognize_google(audio, language=idioma_reconocimiento)
+        texto = texto.lower().strip()
+
+        print("🗣 Dijiste:", texto)
+
+        if texto == palabra_correcta.lower():
+            combo += 1
+            puntos += 10 + (combo * 2)
+            print("✅ ¡Correcto!")
+            print(f"🔥 Combo x{combo}")
+        else:
+            vidas -= 1
+            combo = 0
+            print("❌ Incorrecto")
+            print(f"✔ Respuesta correcta: {palabra_correcta}")
+            print(f"❤️ Vidas restantes: {vidas}")
+
+    except sr.UnknownValueError:
+        vidas -= 1
+        combo = 0
+        print("❌ No se entendió tu voz.")
+        print(f"❤️ Vidas restantes: {vidas}")
+
+    except sr.RequestError:
+        print("❌ Error con el servicio.")
+        break
+
+    time.sleep(1)
+
+# =========================
+# FIN DEL JUEGO
+# =========================
+print("\n======================================")
+print("🏁 GAME OVER")
+print(f"🏆 Puntuación final: {puntos}")
+
+if puntos >= 100:
+    print("🌟 ¡Excelente nivel!")
+elif puntos >= 50:
+    print("👏 Buen trabajo")
+else:
+    print("💪 Sigue practicando")
+
+print("Gracias por jugar 🎮")
