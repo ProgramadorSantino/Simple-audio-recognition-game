@@ -116,6 +116,10 @@ if duration < 1:
 print(f"⏱ Tendrás {duration} segundos para responder.")
 
 
+
+
+
+
 # =========================
 # INVERTIR DICCIONARIO SI ES NECESARIO
 # =========================
@@ -150,8 +154,26 @@ print("🚀 ¡Comienza!\n")
 # =========================
 while vidas > 0:
 
-    comando = input("Presiona ENTER para continuar o escribe 'pausa': ").lower().strip()
+    comando = input("ENTER para jugar | pausa | help: ").lower().strip()
+    
+    
+    
+    if comando == "help":
+            print("\n==============================")
+            print("📖 AYUDA DEL JUEGO")
+            print("ENTER  -> empezar una ronda")
+            print("pausa  -> pausar el juego")
+            print("help   -> mostrar esta ayuda")
+            print("------------------------------")
+            print("🎤 Debes decir la traducción correcta de la palabra")
+            print("❤️ Tienes 3 vidas")
+            print("🔥 Las respuestas correctas aumentan el combo")
+            print("🏆 Más combo = más puntos")
+            print("==============================\n")
+            continue
+        
 
+    
     if comando == "pausa":
         print("⏸ Juego en pausa. Escribe 'continuar' para seguir.")
 
@@ -214,9 +236,6 @@ while vidas > 0:
         break
 
     time.sleep(1)
-
-
-
 
 # =========================
 # FIN DEL JUEGO
